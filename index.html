@@ -77,7 +77,7 @@ Licensed under Apache 2.0 License
     <div id="map" class="map"><!-- The map container --></div>
 
     <div class="toolbar">
-        Version 1.11<br>
+        Version 1.1<br>
         <button id="btnImport">Import Data...</button><br>
         <input type="file" id="fileInput" text="Import file" style="display: none" multiple /><br>
         <button id="btnClear">Clear all locations</button><br>
@@ -191,30 +191,31 @@ Licensed under Apache 2.0 License
                 console.error(e);
                 return;
             }
-
+        
             // With valid JSON, attempt to load waypoints and create list.
             if (typeof data.timelineObjects == "undefined") {
                 alert("Invalid data: must contain 'timelineObjects' array.");
                 return;
             }
-
+        
             // Iterate all objects inside timelineObjects, adding all 'placeVisit' objects as locations.
             for (let d of data.timelineObjects) {
                 if (typeof d.placeVisit == "undefined") { continue; }  // Skip this object.
                 const place = d.placeVisit;
-
+        
                 // Load the object as a location:
                 let l = $("#lstLocations .location.template").clone(true);
                 $("#lstLocations").append(l);
-
+        
                 l.removeClass('template');
                 l.prop('locationData', place);  // Save the data structure with the object.
-                l.find('.location-name').text(place.location.address);
+        
+                // Replace commas with dashes in the first row cells
+                l.find('.location-name').text(place.location.address.replace(/,/g, '-'));
                 const start = moment(place.duration.startTimestamp);
                 const end = moment(place.duration.endTimestamp);
-
-                l.find('.arrived').text(start.format('Y-M-D H:m:s'));
-                l.find('.departed').text(end.format('Y-M-D H:m:s'));
+                l.find('.arrived').text(start.format('Y-M-D H:m:s').replace(/,/g, '-'));
+                l.find('.departed').text(end.format('Y-M-D H:m:s').replace(/,/g, '-'));
                 l.find('.duration').text(end.diff(start, 'minutes') + " min");
                 l.find('.longitude').text(place.location.longitudeE7 / 10000000.0);
                 l.find('.latitude').text(place.location.latitudeE7 / 10000000.0);
@@ -279,21 +280,21 @@ Licensed under Apache 2.0 License
             let results = "";
 
             if (format === "csv") {
-                results = `"Address","Arrival","Departure","Duration","Description"`;
+                results = "Address,Arrival,Departure,Duration,Description";
                 if (includeCoordinates) {
-                    results += `,"Longitude","Latitude"`;
+                    results += ",Longitude,Latitude";
                 }
-                results += `\n`;
+                results += "\n";
 
                 // Iterate location list, extracting all selected items.
                 $(".locations .location").not('.template').each(function() {
                     let el = $(this);
                     if (el.find('.selected').is(':checked')) {
-                        results += `"${el.find('.location-name').text()}","${el.find('.arrived').text()}","${el.find('.departed').text()}","${el.find('.duration').text()}","${el.find('.description').val()}"`;
+                        results += `${el.find('.location-name').text()},${el.find('.arrived').text()},${el.find('.departed').text()},${el.find('.duration').text()},${el.find('.description').val()}`;
                         if (includeCoordinates) {
-                            results += `,"${el.find('.longitude').text()}","${el.find('.latitude').text()}"`;
+                            results += `,${el.find('.longitude').text()},${el.find('.latitude').text()}`;
                         }
-                        results += `\n`;
+                        results += "\n";
                     }
                 });
             } else if (format === "gpx") {
@@ -324,10 +325,10 @@ Licensed under Apache 2.0 License
             }
 
             // Return file:
-            const blob = new Blob([results], { type: format === "csv" ? "text/csv": "application/xml" });
+            const blob = new Blob([results], { type: "text/csv" });
             const link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
-            link.download = `results.${format}`; // Corrected syntax for setting filename
+            link.download = `results.${format}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -409,5 +410,4 @@ Licensed under Apache 2.0 License
     </script>
 </body>
 </html>
-
 
